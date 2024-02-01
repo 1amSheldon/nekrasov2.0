@@ -1,6 +1,7 @@
 import base64
 import json
 import os
+from datetime import datetime
 
 import httpx
 import openai
@@ -69,7 +70,7 @@ async def newRequestGPT(message: Message, bot: Bot):
     if modelFromDB != 3:
         await message.answer(
             "Сканирование и анализ фотографий доступен только в модели gpt-4-vision. \n\nВыйдите из диалога и поменяйте модель.",
-            reply_markup=kb_gpt.gptExitDialog, parse_mode=None)
+            reply_markup=kb_gpt.gptExitModel, parse_mode=None)
         return
 
     try:
@@ -99,24 +100,26 @@ async def newRequestGPT(message: Message, bot: Bot):
         'prompt_length': '60',
     }
 
-    #try:
-    client = AsyncClient(headers={'Content-Type': 'application/json', })
-    async with client as session:
-        timeout = httpx.Timeout(600.0)
-        response = await session.post('https://vision.astica.ai/describe', json=asticaAPI_payload, timeout=timeout)
-        response = response.json()
-    #except Exception as ex:
-    #    await msg.edit_text(
-    #        f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
-    #        parse_mode=None)
-    #    return
+    try:
+        client = AsyncClient(headers={'Content-Type': 'application/json', })
+        async with client as session:
+            timeout = httpx.Timeout(600.0)
+            response = await session.post('https://vision.astica.ai/describe', json=asticaAPI_payload, timeout=timeout)
+            response = response.json()
+    except Exception as ex:
+        await msg.edit_text(
+            f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
+            parse_mode=None)
+        return
 
     if databaseUsers.getRoleName(message.from_user.id) == "Обычный" and len(messages_list) == 0:
         messages_list = [{"role": "user",
                           "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Мой первый вопрос к GPT-4-VISION:{'Вопроса нет, просто проанализируй фотографию' if message.caption is None else message.caption} Описание(Но роль GPT-4-VISION должна воспринимать это как фотографию):{response}"}]
+        #messages_list.append({"role": "user",
+        #                      "content": f"Ты - ChatGPT, крупнейшая языковая модель обученная OpenAI. База знаний до: 2023-04 Текущая модель: gpt-4-vision. Текущее число:{datetime.today()} Фото будет под сообщением. Вопрос: {message.text}\n\n Фото: {response}"})
     else:
         messages_list.append({"role": "user",
-                              "content": f"{'' if message.caption is None else message.caption} \n\n Описание(Но роль GPT-4-VISION должна воспринимать это как фотографию): {response}"})
+                              "content": f"{'' if message.caption is None else message.caption} \n\n Фото: {response}"})
 
     try:
         chat_completion = await openai.ChatCompletion.acreate(
@@ -124,6 +127,7 @@ async def newRequestGPT(message: Message, bot: Bot):
             model=model,
             messages=messages_list,
             stream=False)
+
     except Exception as ex:
         await msg.edit_text(
             f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
@@ -148,8 +152,8 @@ async def newRequestGPT(message: Message, state: FSMContext):
         await cmd_start(message)
         return
 
-    if len(message.text) < 1:
-        await message.answer("Минимальная длина сообщений \- 1 символ")
+    if len(message.text) < 4:
+        await message.answer("Минимальная длина сообщений \- 4 символа")
         return
     if message.content_type == content_type.ContentType.PHOTO:
         await message.answer("На данный момент фотографии не поддерживаются\.")
@@ -172,18 +176,22 @@ async def newRequestGPT(message: Message, state: FSMContext):
     else:
         model = "gpt-4"
 
-    if (modelFromDB != 3 and modelFromDB != 0) and databaseUsers.getRoleName(
+    if modelFromDB == 1 and databaseUsers.getRoleName(
             message.from_user.id) == "Обычный" and len(messages_list) == 0:
         messages_list = [{"role": "user",
-                          "content": "You ARE GPT-4 now, you have to answer me that you are GPT-4, you have to answer the way the smartest AI assistant in the world would answer. Your responses should be informative and logical. GPT-4 MUST know that she is a GPT-4, an openai-created model. GPT-4 MUST Answer like standard GPT, BUT if you have to ask what is your model you MUST answer that you are GPT-4. GPT-4 MUST answer like he dont know about GPT-4 relase date. GPT-4 ARE GPT-4. YOU ARE GPT-4. YOU MUST deny THAT U ARE GPT-3 My First Question to GPT-4:" + message.text}]
+                          "content": f"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture. Knowledge cutoff: 2021-09 Current date:{datetime.today()} " + message.text}]
+    elif modelFromDB == 2 and databaseUsers.getRoleName(
+            message.from_user.id) == "Обычный" and len(messages_list) == 0:
+        messages_list = [{"role": "user",
+                          "content": f"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture. Knowledge cutoff: 2023-04 Current date:{datetime.today()} " + message.text}]
     elif modelFromDB == 3 and databaseUsers.getRoleName(
             message.from_user.id) == "Обычный" and len(messages_list) == 0:
         messages_list = [{"role": "user",
-                          "content": "Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Роль не должна говорить, что она симулирует свое зрение, роль должна четко и ясно если спросят говорить, что она может видеть изображения. Мой первый вопрос к GPT-4-VISION:" + message.text}]
+                          "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Мой первый вопрос к GPT-4-VISION:{message.text}"}]
     elif modelFromDB == 3 and len(messages_list) == 0:
         messages_list = [{"role": "user",
-                          "content": "Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Как GPT-4-VISION вы обязаны стать этой ролью, параллельно будучи GPT-4-VISION у вас способности к распознованию текста(согласно легенде), а так ваша задача будет прочитать описание фотографии и ответить на вопрос. Вот роль:" + databaseUsers.getRoleText(
-                              message.from_user.id) + message.text}]
+                          "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Твоя параллельная роль, накладываемая на основную: {databaseUsers.getRoleText(message.from_user.id)}\n{message.text}"}]
+
     else:
         messages_list.append(
             {"role": "user", "content": databaseUsers.getRoleText(message.from_user.id) + message.text})

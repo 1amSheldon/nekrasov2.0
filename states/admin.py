@@ -1,6 +1,6 @@
 from aiogram.fsm.state import StatesGroup, State
 
-  
+
 
 class Admin(StatesGroup):
     IN_POST_TEXT = State()

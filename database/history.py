@@ -36,5 +36,5 @@ class Database_history:
         self.connection.commit()
 
 
-databaseHistory = Database_history()
+databaseHistory: Database_history = Database_history()
 databaseHistory.createTable()

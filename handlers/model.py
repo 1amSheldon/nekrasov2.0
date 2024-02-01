@@ -22,7 +22,7 @@ async def modelMenu(callback: CallbackQuery):
         else 1,
         callback.from_user.id)
     try:
-        await callback.message.edit_text("*Выберите одну из доступных модели Некрасова2\.0\.*",
+        await callback.message.edit_text("*Выберите одну из доступных моделей Некрасова2\.0\.*",
                                          reply_markup=await modelMenuKb(callback.from_user.id))
     except:
         await callback.answer()

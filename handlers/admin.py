@@ -20,7 +20,8 @@ async def adminPanel(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "adminExit")
-async def adminReturnToMenu(callback: CallbackQuery):
+async def adminReturnToMenu(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     await cmd_start(callback)
 
 
