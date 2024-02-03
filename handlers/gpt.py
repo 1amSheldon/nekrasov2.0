@@ -157,12 +157,10 @@ async def newRequestGPT(message: Message, state: FSMContext):
 
     msg = await message.answer("Подождите немного, ждем ответа от сервера\.\.\.")
 
-
-    messages_list = json.loads(databaseHistory.getUserHistory(message.from_user.id))
-    print(1)
-    #except:
-    #    messages_list = []
-    #    print(2)
+    try:
+        messages_list = json.loads(databaseHistory.getUserHistory(message.from_user.id))
+    except:
+        messages_list = []
 
     modelFromDB = databaseUsers.getModel(message.from_user.id)
     if modelFromDB == 0:
@@ -176,33 +174,27 @@ async def newRequestGPT(message: Message, state: FSMContext):
 
     if modelFromDB == 1 and databaseUsers.getRoleName(
             message.from_user.id) == "Обычный" and len(messages_list) == 0:
-        print(3)
         messages_list = [{"role": "user",
                           "content": f"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture. Knowledge cutoff: 2021-09 Current date:{datetime.today()} " + message.text}]
     elif modelFromDB == 2 and databaseUsers.getRoleName(
             message.from_user.id) == "Обычный" and len(messages_list) == 0:
-        print(4)
         messages_list = [{"role": "user",
                           "content": f"You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture. Knowledge cutoff: 2023-04 Current date:{datetime.today()} " + message.text}]
     elif modelFromDB == 3 and databaseUsers.getRoleName(
             message.from_user.id) == "Обычный" and len(messages_list) == 0:
-        print(5)
         messages_list = [{"role": "user",
                           "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Мой первый вопрос к GPT-4-VISION:{message.text}"}]
     elif modelFromDB == 3 and len(messages_list) == 0:
-        print(6)
         messages_list = [{"role": "user",
                           "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Твоя параллельная роль, накладываемая на основную: {databaseUsers.getRoleText(message.from_user.id)}\n{message.text}"}]
 
     else:
         if len(messages_list) == 0:
-            print(7)
             messages_list.append(
                 {"role": "user", "content": databaseUsers.getRoleText(message.from_user.id) + message.text})
         else:
             messages_list.append(
                 {"role": "user", "content": message.text})
-            print(8)
     try:
         print(messages_list)
         chat_completion = await openai.ChatCompletion.acreate(
