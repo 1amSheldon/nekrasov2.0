@@ -157,12 +157,12 @@ async def newRequestGPT(message: Message, state: FSMContext):
 
     msg = await message.answer("Подождите немного, ждем ответа от сервера\.\.\.")
 
-    try:
-        messages_list = json.loads(databaseHistory.getUserHistory(message.from_user.id))
-        print(1)
-    except:
-        messages_list = []
-        print(2)
+
+    messages_list = json.loads(databaseHistory.getUserHistory(message.from_user.id))
+    print(1)
+    #except:
+    #    messages_list = []
+    #    print(2)
 
     modelFromDB = databaseUsers.getModel(message.from_user.id)
     if modelFromDB == 0:
