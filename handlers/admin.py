@@ -21,7 +21,6 @@ async def adminPanel(callback: CallbackQuery):
 
 @router.callback_query(F.data == "adminExit")
 async def adminReturnToMenu(callback: CallbackQuery, state: FSMContext):
-    await state.clear()
     await cmd_start(callback)
 
 
@@ -36,7 +35,8 @@ async def adminStatistics(callback: CallbackQuery):
 
 
 @router.callback_query(F.data == "adminMenuExit")
-async def adminMenuFromExitStat(callback: CallbackQuery):
+async def adminMenuFromExitStat(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
     await callback.message.edit_text(
         f"Админ панель\.\n\nТехнический администратор: \@iamsheldon \(По всем вопросам\)\n\n"
         f"*Выберите нужное действие:*", reply_markup=adminMenu)
