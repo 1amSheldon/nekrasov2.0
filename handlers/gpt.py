@@ -151,10 +151,6 @@ async def newRequestGPT(message: Message, state: FSMContext):
         await state.clear()
         await cmd_start(message)
         return
-
-    if len(message.text) < 4:
-        await message.answer("Минимальная длина сообщений \- 4 символа")
-        return
     if message.content_type == content_type.ContentType.PHOTO:
         await message.answer("На данный момент фотографии не поддерживаются\.")
         return
