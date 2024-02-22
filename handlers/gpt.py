@@ -21,7 +21,7 @@ from states.users import User
 router = Router()
 
 openai.api_key = config.neuroapi_token.get_secret_value()
-openai.api_base = "http://147.45.196.15:10100/v1"
+openai.api_base = "http://147.45.196.15:8182/v1"
 
 
 @router.callback_query(F.data == "new_dialog")
