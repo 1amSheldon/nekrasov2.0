@@ -120,28 +120,41 @@ async def newRequestGPT(message: Message, bot: Bot):
     else:
         messages_list.append({"role": "user",
                               "content": f"{'' if message.caption is None else message.caption} \n\n Фото: {response}"})
-
     try:
         chat_completion = await openai.ChatCompletion.acreate(
             temperature=0,
             model=model,
             messages=messages_list,
-            stream=False)
+            stream=True)
 
     except Exception as ex:
-        await msg.edit_text(
-            f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
-            parse_mode=None)
-        return
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                temperature=0,
+                model=model,
+                messages=messages_list,
+                stream=True)
+        except:
+            await msg.edit_text(
+                f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
+                parse_mode=None)
+            return
 
-    try:
-        await msg.edit_text(chat_completion.choices[0].message.content, reply_markup=kb_gpt.gptExitDialog,
-                            parse_mode="Markdown")
-    except:
-        await msg.edit_text(chat_completion.choices[0].message.content, reply_markup=kb_gpt.gptExitDialog,
-                            parse_mode=None)
-
-    messages_list.append({"role": "assistant", "content": chat_completion.choices[0].message.content})
+    sentence = ""
+    async for token in chat_completion:
+        content = token["choices"][0]["delta"].get("content")
+        if token["choices"][0]["finish_reason"] == "stop":
+            try:
+                await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
+                                    parse_mode="Markdown")
+            except:
+                await msg.edit_text(
+                    f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
+                    parse_mode=None)
+                return
+        if content != None and content != "":
+            sentence += content
+    messages_list.append({"role": "assistant", "content": sentence})
     databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list))
 
 
@@ -196,26 +209,39 @@ async def newRequestGPT(message: Message, state: FSMContext):
             messages_list.append(
                 {"role": "user", "content": message.text})
     try:
-        print(messages_list)
         chat_completion = await openai.ChatCompletion.acreate(
             temperature=0,
             model=model,
             messages=messages_list,
-            stream=False)
+            stream=True)
+
     except Exception as ex:
-        await msg.edit_text(
-            f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
-            parse_mode=None)
-        return
+        try:
+            chat_completion = await openai.ChatCompletion.acreate(
+                temperature=0,
+                model=model,
+                messages=messages_list,
+                stream=True)
+        except:
+            await msg.edit_text(
+                f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
+                parse_mode=None)
+            return
 
-    try:
-        await msg.edit_text(chat_completion.choices[0].message.content, reply_markup=kb_gpt.gptExitDialog,
-                            parse_mode="Markdown")
-    except:
-        await msg.edit_text(chat_completion.choices[0].message.content, reply_markup=kb_gpt.gptExitDialog,
-                            parse_mode=None)
-
-    messages_list.append({"role": "assistant", "content": chat_completion.choices[0].message.content})
+    sentence = ""
+    async for token in chat_completion:
+        content = token["choices"][0]["delta"].get("content")
+        if token["choices"][0]["finish_reason"] == "stop":
+            try:
+                await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
+                                    parse_mode="Markdown")
+            except:
+                await msg.edit_text(
+                    f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
+                    parse_mode=None)
+                return
+        if content != None and content != "":
+            sentence += content
+    messages_list.append({"role": "assistant", "content": sentence})
     databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list))
-    print(messages_list)
 #
