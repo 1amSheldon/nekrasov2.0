@@ -9,7 +9,7 @@ class Database_users():
     def updateUser(self, id) -> bool:
         if self.cur.execute(f"SELECT model FROM login_id WHERE id = {id}").fetchone() is not None:
             return True
-        self.cur.execute("INSERT INTO login_id VALUES(?, 0, 0, 0, 'Обычный', '', 0, 0, 1)", (id,))
+        self.cur.execute("INSERT INTO login_id VALUES(?, 0, 0, 0, 'Обычный', '', 0, 0, 1, 0)", (id,))
         self.commit()
         return False
 
@@ -24,7 +24,8 @@ class Database_users():
                                                             role_text TEXT, 
                                                             admin INTEGER,
                                                             model INTEGER, 
-                                                            free_try INTEGER)''')
+                                                            free_try INTEGER,
+                                                            inDialog INTEGER DEFAULT 0)''')
         self.commit()
 
     def setRoleName(self, id, roleName):
@@ -53,6 +54,13 @@ class Database_users():
     def addDayLeft(self, id, months):
         self.cur.execute('UPDATE login_id SET day_left = day_left + ? WHERE id = ?', (months, id,))
         self.commit()
+
+    def setInDialog(self, id, inDialog):
+        self.cur.execute('UPDATE login_id SET inDialog = ? WHERE id = ?', (inDialog, id,))
+        self.commit()
+
+    def getInDialog(self, id):
+        return bool(self.cur.execute(f"SELECT inDialog FROM login_id WHERE id = ?", (id,)).fetchone()[0])
 
     def getDayLeft(self, id):
         return self.cur.execute(f"SELECT day_left FROM login_id WHERE id = ?", (id,)).fetchone()[0]
