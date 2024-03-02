@@ -155,6 +155,8 @@ async def newRequestGPT(message: Message, bot: Bot):
                 try:
                     await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
                                         parse_mode="Markdown")
+                    databaseUsers.setInDialog(message.from_user.id, 0)
+                    return
                 except Exception as ex:
                     await msg.edit_text(
                         f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
@@ -166,7 +168,6 @@ async def newRequestGPT(message: Message, bot: Bot):
                 messages_list2 = messages_list.copy()
                 messages_list2.append({"role": "assistant", "content": sentence})
                 databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
-        databaseUsers.setInDialog(message.from_user.id, 0)
 
     task = asyncio.create_task(
         turnStreamOn())
@@ -272,6 +273,8 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 try:
                     await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
                                         parse_mode="Markdown")
+                    databaseUsers.setInDialog(message.from_user.id, 0)
+                    return
                 except Exception as ex:
                     await msg.edit_text(
                         f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
@@ -283,7 +286,6 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 messages_list2 = messages_list.copy()
                 messages_list2.append({"role": "assistant", "content": sentence})
                 databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
-        databaseUsers.setInDialog(message.from_user.id, 0)
 
     task = asyncio.create_task(
         turnStreamOn())
