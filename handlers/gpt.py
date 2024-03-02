@@ -40,7 +40,9 @@ async def newDialog(callback: CallbackQuery, state: FSMContext):
         f"*Создан новый диалог!*\n\nМодель: *{model}*\nРоль: *{databaseUsers.getRoleName(callback.from_user.id)}*\n\nБот будет запоминать предыдущие сообщения.",
         reply_markup=kb_gpt.gptExit, parse_mode="Markdown")
     databaseHistory.deleteUserHistory(callback.from_user.id)
+    databaseUsers.setInDialog(message.from_user.id, 0)
     await state.set_state(User.IN_GPT_DIALOG)
+
 
 
 @router.callback_query(F.data == "gptExit")
