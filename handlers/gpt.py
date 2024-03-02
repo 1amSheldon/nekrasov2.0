@@ -264,7 +264,6 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 parse_mode=None)
             databaseUsers.setInDialog(message.from_user.id, 0)
             return
-
     async def turnStreamOn():
         sentence = ""
         async for token in chat_completion:
