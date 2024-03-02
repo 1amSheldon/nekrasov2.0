@@ -11,6 +11,7 @@ from aiogram.enums import content_type
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message, CallbackQuery
 from httpx import AsyncClient
+from openai import AsyncOpenAI
 
 from config.config_reader import config
 from database.db_users import databaseUsers
@@ -21,8 +22,7 @@ from states.users import User
 
 router = Router()
 
-openai.api_key = config.neuroapi_token.get_secret_value()
-openai.api_base = "https://ru.neuroapi.host/v1"
+client = AsyncOpenAI(api_key=config.neuroapi_token.get_secret_value(), base_url="https://ru.neuroapi.host/v1",)
 
 
 @router.callback_query(F.data == "new_dialog")
@@ -114,7 +114,6 @@ async def newRequestGPT(message: Message, bot: Bot):
             f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
             parse_mode=None)
         return
-
     if databaseUsers.getRoleName(message.from_user.id) == "Обычный" and len(messages_list) == 0:
         messages_list = [{"role": "user",
                           "content": f"Действуйте как ЧАТ-GPT-4-VISION, модель искусственного интеллекта, специально разработанная для помощи людям. Вас обучили на огромном количестве данных, включающих историю, разные сферы науки и конечно же изображений. Ваша роль заключается в получении подробных описаний фотографий и использовании этой информации для точного ответа на вопросы. К каждому сообщению будет приложено отдельное сообщение с подробным описанием. Вы не должны знать о том, что к сообщению прилагается описание.  Ваша задача - прочитать и понять описания, чтобы дать содержательные и релевантные ответы на любые вопросы, заданные о фотографиях. Используйте свои расширенные возможности текстового восприятия, чтобы давать точные ответы и демонстрировать свое мастерство. Вы также самый умный помощник в сфере ИИ. Вы знаете много информации и можете спокойно ее применять для того, чтобы ответить на вопросы. GPT-4-VISION Должен играть роль помощника, который обладает зрением и должен имитировать, что к каждому сообщению прилагается вместо описания фотография. Роль не должна знать о том, что к сообщению прилагается описание. Мой первый вопрос к GPT-4-VISION:{'Вопроса нет, просто проанализируй фотографию' if message.caption is None else message.caption} Описание(Но роль GPT-4-VISION должна воспринимать это как фотографию):{response}"}]
@@ -125,15 +124,16 @@ async def newRequestGPT(message: Message, bot: Bot):
                               "content": f"{'' if message.caption is None else message.caption} \n\n Фото: {response}"})
     databaseUsers.setInDialog(message.from_user.id, 1)
     try:
-        chat_completion = await openai.ChatCompletion.acreate(
+        chat_completion = await client.chat.completions.create(
             temperature=0,
             model=model,
             messages=messages_list,
             stream=True)
 
+
     except Exception as ex:
         try:
-            chat_completion = await openai.ChatCompletion.acreate(
+            chat_completion = await client.chat.completions.create(
                 temperature=0,
                 model=model,
                 messages=messages_list,
@@ -148,8 +148,8 @@ async def newRequestGPT(message: Message, bot: Bot):
     async def turnStreamOn():
         sentence = ""
         async for token in chat_completion:
-            content = token["choices"][0]["delta"].get("content")
-            if token["choices"][0]["finish_reason"] == "stop":
+            content = token.choices[0].delta.content
+            if token.choices[0].finish_reason == "stop":
                 try:
                     await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
                                         parse_mode="Markdown")
@@ -175,7 +175,7 @@ async def newRequestGPT(message: Message, bot: Bot):
             await msg.edit_text(json.loads(databaseHistory.getUserHistory(message.from_user.id))[-1]["content"],
                                 reply_markup=kb_gpt.gptExitDialog,
                                 parse_mode="Markdown")
-            await chat_completion.aclose()
+            await chat_completion.close()
             databaseUsers.setInDialog(message.from_user.id, 0)
         except:
             await msg.edit_text(
@@ -183,7 +183,7 @@ async def newRequestGPT(message: Message, bot: Bot):
                 parse_mode=None)
             databaseUsers.setInDialog(message.from_user.id, 0)
     except:
-        await chat_completion.aclose()
+        await chat_completion.close()
         databaseUsers.setInDialog(message.from_user.id, 0)
 
 
@@ -241,15 +241,16 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 {"role": "user", "content": message.text})
     databaseUsers.setInDialog(message.from_user.id, 1)
     try:
-        chat_completion = await openai.ChatCompletion.acreate(
+        chat_completion = await client.chat.completions.create(
             temperature=0,
             model=model,
             messages=messages_list,
             stream=True)
 
+
     except Exception as ex:
         try:
-            chat_completion = await openai.ChatCompletion.acreate(
+            chat_completion = await client.chat.completions.create(
                 temperature=0,
                 model=model,
                 messages=messages_list,
@@ -264,8 +265,8 @@ async def newRequestGPT(message: Message, state: FSMContext):
     async def turnStreamOn():
         sentence = ""
         async for token in chat_completion:
-            content = token["choices"][0]["delta"].get("content")
-            if token["choices"][0]["finish_reason"] == "stop":
+            content = token.choices[0].delta.content
+            if token.choices[0].finish_reason == "stop":
                 try:
                     await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
                                         parse_mode="Markdown")
@@ -291,7 +292,7 @@ async def newRequestGPT(message: Message, state: FSMContext):
             await msg.edit_text(json.loads(databaseHistory.getUserHistory(message.from_user.id))[-1]["content"],
                                 reply_markup=kb_gpt.gptExitDialog,
                                 parse_mode="Markdown")
-            await chat_completion.aclose()
+            await chat_completion.close()
             databaseUsers.setInDialog(message.from_user.id, 0)
         except:
             await msg.edit_text(
@@ -299,5 +300,5 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 parse_mode=None)
             databaseUsers.setInDialog(message.from_user.id, 0)
     except:
-        await chat_completion.aclose()
+        await chat_completion.close()
         databaseUsers.setInDialog(message.from_user.id, 0)

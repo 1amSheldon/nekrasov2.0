@@ -9,7 +9,7 @@ class Database_users():
     def updateUser(self, id) -> bool:
         if self.cur.execute(f"SELECT model FROM login_id WHERE id = {id}").fetchone() is not None:
             return True
-        self.cur.execute("INSERT INTO login_id VALUES(?, 0, 0, 0, 'Обычный', '', 0, 0, 1, 0)", (id,))
+        self.cur.execute("INSERT INTO login_id VALUES(?, 0, 0, 0, 'Обычный', '', 0, 2, 1, 0)", (id,))
         self.commit()
         return False
 
