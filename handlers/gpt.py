@@ -106,8 +106,8 @@ async def newRequestGPT(message: Message, bot: Bot):
     }
 
     try:
-        client = AsyncClient(headers={'Content-Type': 'application/json', })
-        async with client as session:
+        client2 = AsyncClient(headers={'Content-Type': 'application/json', })
+        async with client2 as session:
             timeout = httpx.Timeout(600.0)
             response = await session.post('https://vision.astica.ai/describe', json=asticaAPI_payload, timeout=timeout)
             response = response.json()
