@@ -126,55 +126,45 @@ async def newRequestGPT(message: Message, bot: Bot):
                               "content": f"{'' if message.caption is None else message.caption} \n\n Фото: {response}"})
     databaseUsers.setInDialog(message.from_user.id, 1)
     await msg.edit_text("Подождите немного, ждем ответа от сервера\.\.\.\.\.\.")
+
+    async def turnStreamOn(chat_completion):
+        sentence = ""
+        flag = False
+        async for token in chat_completion:
+            flag = True
+            content = token.choices[0].delta.content
+            if token.choices[0].finish_reason == "stop":
+                try:
+                    await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
+                                        parse_mode="Markdown")
+                    databaseUsers.setInDialog(message.from_user.id, 0)
+                    return
+                except:
+                    raise Exception("Error")
+            if content != None and content != "":
+                sentence += content
+                messages_list2 = messages_list.copy()
+                messages_list2.append({"role": "assistant", "content": sentence})
+                databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
+        if flag:
+            return
+        else:
+            raise Exception("Error")
+
     while True:
-        # try:
-        chat_completion = await client.chat.completions.create(
-            temperature=0,
-            model=model,
-            messages=messages_list,
-            stream=True)
-        # except Exception as ex:
-        #    print('XXXXXXXX' + ex)
-        #    try:
-        #        chat_completion = await client.chat.completions.create(
-        #            temperature=0,
-        #            model=model,
-        #            messages=messages_list,
-        #            stream=True)
-        #    except:
-        #        await msg.edit_text(
-        #            f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
-        #            parse_mode=None)
-        #        databaseUsers.setInDialog(message.from_user.id, 0)
-        #        return
-        databaseUsers.setInDialog(message.from_user.id, 0)
-
-        async def turnStreamOn():
-            sentence = ""
-            async for token in chat_completion:
-                databaseUsers.setInDialog(message.from_user.id, 1)
-                content = token.choices[0].delta.content
-                if token.choices[0].finish_reason == "stop":
-                    try:
-                        await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
-                                            parse_mode="Markdown")
-                        databaseUsers.setInDialog(message.from_user.id, 1)
-                        return
-                    except:
-                        continue
-                if content != None and content != "":
-                    sentence += content
-                    messages_list2 = messages_list.copy()
-                    messages_list2.append({"role": "assistant", "content": sentence})
-                    databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
-
+        try:
+            chat_completion = await client.chat.completions.create(
+                temperature=0,
+                model=model,
+                messages=messages_list,
+                stream=True)
+        except:
+            continue
         task = asyncio.create_task(
-            turnStreamOn())
+            turnStreamOn(chat_completion))
         try:
             await asyncio.wait_for(task, timeout=20)
-            if databaseUsers.getInDialog(message.from_user.id):
-                databaseUsers.setInDialog(message.from_user.id, 0)
-                return
+            return
         except TimeoutError:
             try:
                 await msg.edit_text(json.loads(databaseHistory.getUserHistory(message.from_user.id))[-1]["content"],
@@ -183,13 +173,12 @@ async def newRequestGPT(message: Message, bot: Bot):
                 await chat_completion.close()
                 databaseUsers.setInDialog(message.from_user.id, 0)
             except:
-                await msg.edit_text(
-                    f"К сожалению сейчас сервера недоступны",
-                    parse_mode=None)
-                databaseUsers.setInDialog(message.from_user.id, 0)
+                continue
+
         except:
             await chat_completion.close()
             databaseUsers.setInDialog(message.from_user.id, 0)
+            continue
 
 
 @router.message(User.IN_GPT_DIALOG)
@@ -245,55 +234,45 @@ async def newRequestGPT(message: Message, state: FSMContext):
             messages_list.append(
                 {"role": "user", "content": message.text})
     databaseUsers.setInDialog(message.from_user.id, 1)
+
+    async def turnStreamOn(chat_completion):
+        sentence = ""
+        flag = False
+        async for token in chat_completion:
+            flag = True
+            content = token.choices[0].delta.content
+            if token.choices[0].finish_reason == "stop":
+                try:
+                    await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
+                                        parse_mode="Markdown")
+                    databaseUsers.setInDialog(message.from_user.id, 0)
+                    return
+                except:
+                    raise Exception("Error")
+            if content != None and content != "":
+                sentence += content
+                messages_list2 = messages_list.copy()
+                messages_list2.append({"role": "assistant", "content": sentence})
+                databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
+        if flag:
+            return
+        else:
+            raise Exception("Error")
+
     while True:
-        # try:
-        chat_completion = await client.chat.completions.create(
-            temperature=0,
-            model=model,
-            messages=messages_list,
-            stream=True)
-        # except Exception as ex:
-        #    print('XXXXXXXX' + ex)
-        #    try:
-        #        chat_completion = await client.chat.completions.create(
-        #            temperature=0,
-        #            model=model,
-        #            messages=messages_list,
-        #            stream=True)
-        #    except:
-        #        await msg.edit_text(
-        #            f"К сожалению сейчас сервера недоступны. Повторите попытку позже.\n\nЕсли вы считаете, что ошибка только у вас, сообщите код ошибки в тех-поддержку.\n\nERROR: {ex}",
-        #            parse_mode=None)
-        #        databaseUsers.setInDialog(message.from_user.id, 0)
-        #        return
-        databaseUsers.setInDialog(message.from_user.id, 0)
-
-        async def turnStreamOn():
-            sentence = ""
-            async for token in chat_completion:
-                databaseUsers.setInDialog(message.from_user.id, 1)
-                content = token.choices[0].delta.content
-                if token.choices[0].finish_reason == "stop":
-                    try:
-                        await msg.edit_text(sentence, reply_markup=kb_gpt.gptExitDialog,
-                                            parse_mode="Markdown")
-                        databaseUsers.setInDialog(message.from_user.id, 1)
-                        return
-                    except:
-                        continue
-                if content != None and content != "":
-                    sentence += content
-                    messages_list2 = messages_list.copy()
-                    messages_list2.append({"role": "assistant", "content": sentence})
-                    databaseHistory.addHistory(message.from_user.id, json.dumps(messages_list2))
-
+        try:
+            chat_completion = await client.chat.completions.create(
+                temperature=0,
+                model=model,
+                messages=messages_list,
+                stream=True)
+        except:
+            continue
         task = asyncio.create_task(
-            turnStreamOn())
+            turnStreamOn(chat_completion))
         try:
             await asyncio.wait_for(task, timeout=20)
-            if databaseUsers.getInDialog(message.from_user.id):
-                databaseUsers.setInDialog(message.from_user.id, 0)
-                return
+            return
         except TimeoutError:
             try:
                 await msg.edit_text(json.loads(databaseHistory.getUserHistory(message.from_user.id))[-1]["content"],
@@ -302,10 +281,9 @@ async def newRequestGPT(message: Message, state: FSMContext):
                 await chat_completion.close()
                 databaseUsers.setInDialog(message.from_user.id, 0)
             except:
-                await msg.edit_text(
-                    f"К сожалению сейчас сервера недоступны",
-                    parse_mode=None)
-                databaseUsers.setInDialog(message.from_user.id, 0)
+                continue
+
         except:
             await chat_completion.close()
             databaseUsers.setInDialog(message.from_user.id, 0)
+            continue
