@@ -125,6 +125,7 @@ async def newRequestGPT(message: Message, bot: Bot):
         messages_list.append({"role": "user",
                               "content": f"{'' if message.caption is None else message.caption} \n\n Фото: {response}"})
     databaseUsers.setInDialog(message.from_user.id, 1)
+    await msg.edit_text("Подождите немного, ждем ответа от сервера\.\.\.\.\.\.")
     while True:
         # try:
         chat_completion = await client.chat.completions.create(
