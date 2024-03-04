@@ -19,7 +19,7 @@ httpx==0.26.0
 idna==3.6
 magic-filter==1.0.12
 multidict==6.0.4
-openai==1.13.3
+openai==0.28.0
 pydantic==2.5.3
 pydantic-settings==2.1.0
 pydantic_core==2.14.6
